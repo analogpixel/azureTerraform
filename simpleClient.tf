@@ -58,7 +58,7 @@ resource "azurerm_subnet" "poepping_subnet" {
 resource "azurerm_public_ip" "poepping_public_ip" {
     count			 = 2
     name                         = "myPublicIP.${count.index}"
-    domain_name_label            = "myvm-09983-${count.index}"
+    domain_name_label            = "myvm-09984-${count.index}"
     resource_group_name          = "${azurerm_resource_group.poepping_group.name}"
     public_ip_address_allocation = "dynamic"
     location = "westus"
@@ -161,15 +161,17 @@ resource "azurerm_virtual_machine" "myterraformvm" {
         environment = "Terraform Demo"
     }
 
-    #provisioner "local-exec" {
-    #    command = "echo ${element(azurerm_public_ip.poepping_public_ip.*.fqdn , count.index )} >> ipdata.txt"
-    #    on_failure = "continue"
-    #}
+    provisioner "local-exec" {
+        command = "echo ${element(azurerm_public_ip.poepping_public_ip.*.fqdn , count.index )} >> ipdata.txt"
+        on_failure = "continue"
+    }
 
-    #provisioner "local-exec" {
-    #    command = "sleep 60; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u azureuser --private-key ~/.ssh/azuer -i '${element(azurerm_public_ip.poepping_public_ip.*.fqdn , count.index )}' master.yml"
-    #    on_failure = "continue"
-    #}
+    # note the , at the end of the inventory list.  without it ansible won't know to
+    # use this as a list of incoming host names
+    provisioner "local-exec" {
+        command = "sleep 60; ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u azureuser --private-key ~/.ssh/azuer -i '${element(azurerm_public_ip.poepping_public_ip.*.fqdn , count.index )},' master.yml"
+        on_failure = "continue"
+    }
 }
 
 output "public_ip_dns_name" {
